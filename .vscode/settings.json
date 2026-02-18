@@ -4,8 +4,10 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
+
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
+
   "files.exclude": {
     "node_modules": true,
     "dist": true,
@@ -13,9 +15,17 @@
       "when": "$(basename).ts"
     }
   },
+
   "search.exclude": {
     "node_modules": true,
     "dist": true,
     "package-lock.json": true
-  }
+  },
+
+  // Workbench
+  "workbench.editor.enablePreview": true,
+  "workbench.editor.enablePreviewFromQuickOpen": true,
+  "workbench.editor.limit.enabled": true,
+  "workbench.editor.limit.value": 12,
+  "workbench.editor.limit.perEditorGroup": true,
 }
