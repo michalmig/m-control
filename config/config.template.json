@@ -1,0 +1,15 @@
+{
+  "version": "0.1.0",
+  "tools": {
+    "azdo": {
+      "token": "",
+      "organization": ""
+    },
+    "k8s": {
+      "defaultContext": ""
+    },
+    "obsidian": {
+      "vaultPath": ""
+    }
+  }
+}
