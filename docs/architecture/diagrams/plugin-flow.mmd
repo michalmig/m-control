@@ -1,0 +1,61 @@
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4A90E2','primaryTextColor':'#fff','primaryBorderColor':'#2E5C8A','lineColor':'#2E5C8A','secondaryColor':'#50C878','tertiaryColor':'#F39C12'}}}%%
+
+flowchart TD
+    Start([User runs mctl]) --> CheckArgs{Args provided?}
+    
+    CheckArgs -->|No args| Interactive[Interactive Mode]
+    CheckArgs -->|Command arg| Direct[Direct Mode]
+    CheckArgs -->|--help| Help[Show Help]
+    
+    Interactive --> CheckConfig{Config exists?}
+    CheckConfig -->|No| InitConfig[Initialize Config]
+    InitConfig --> ShowMessage[Show config location]
+    ShowMessage --> End([Exit])
+    
+    CheckConfig -->|Yes| SelectCategory[Show Category Menu]
+    SelectCategory --> UserSelectCat{User selects category}
+    UserSelectCat -->|Cancel| End
+    UserSelectCat -->|Select| ShowCommands[Show Commands in Category]
+    
+    ShowCommands --> UserSelectCmd{User selects command}
+    UserSelectCmd -->|Cancel| End
+    UserSelectCmd -->|Select| LookupCmd[Lookup Command Handler]
+    
+    Direct --> LookupCmd
+    
+    LookupCmd --> CmdFound{Command found?}
+    CmdFound -->|No| ShowError[Show Error]
+    ShowError --> End
+    
+    CmdFound -->|Yes| CheckType{Plugin type?}
+    
+    CheckType -->|Internal<br/>TypeScript| ExecuteInternal[Execute In-Process]
+    CheckType -->|External<br/>Python/.NET/etc| PrepareInput[Prepare JSON Input]
+    
+    PrepareInput --> SpawnProcess[Spawn Child Process]
+    SpawnProcess --> WaitCompletion[Wait for Completion]
+    WaitCompletion --> ReadOutput[Read JSON Output]
+    ReadOutput --> Cleanup[Cleanup Temp Files]
+    Cleanup --> CheckExitCode{Exit code 0?}
+    
+    ExecuteInternal --> TryCatch{Try Execute}
+    TryCatch -->|Success| DisplaySuccess[Display Success]
+    TryCatch -->|Error| HandleError[Handle Error]
+    
+    CheckExitCode -->|Yes| DisplaySuccess
+    CheckExitCode -->|No| HandleError
+    
+    DisplaySuccess --> End
+    HandleError --> LogError[Log Error Details]
+    LogError --> ShowUserError[Show User-Friendly Error]
+    ShowUserError --> End
+    
+    Help --> End
+    
+    style Start fill:#4A90E2
+    style End fill:#50C878
+    style ShowError fill:#E74C3C
+    style HandleError fill:#E74C3C
+    style ExecuteInternal fill:#9B59B6
+    style SpawnProcess fill:#F39C12
+    style DisplaySuccess fill:#2ECC71
