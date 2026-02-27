@@ -70,6 +70,34 @@ If starting with team >3 people or enterprise customers from day 1, might choose
 
 ---
 
+## 2026-02-27: CLI Distribution — Monorepo Package Not Resolvable Outside Repo
+
+**Context:**
+`mctl` depends on `@m-control/core` as a Yarn workspace package. Yarn symlinks it inside the repo's `node_modules/`, but once `mctl.js` is copied to `~/.m-control/` the symlink is gone and Node.js throws `Cannot find module '@m-control/core'`.
+
+**What happened:**
+Tried a simple `Copy-Item dist/ → ~/.m-control/dist/` install approach. It failed at runtime because `@m-control/core` wasn't available on the target path. Introduced ncc bundling to inline all dependencies into a single file before copying.
+
+**Lesson:**
+Monorepo workspace packages are a development convenience, not a distribution mechanism. Any tool that ships outside the repo must either:
+1. Be published to npm so its dependencies resolve normally, or
+2. Be bundled so no external resolution is needed at runtime.
+
+**Impact:**
+- Temporary: ncc bundle (`dist/bundle/index.js`) — zero-config, works anywhere Node.js exists
+- Installer now copies a single file instead of an entire directory tree
+- Accepted tech debt: bundle grows with deps, no partial updates, no native addon support
+
+**Would do differently:**
+Go straight to `npm publish` if there were even one external user from day 1. The bundling step is a workaround that buys time without creating blocking debt.
+
+**Related:**
+- ADR: `docs/adr/0004-cli-distribution-strategy.md`
+
+**Migration trigger:** First external user → migrate to `npm publish @m-control/mctl`.
+
+---
+
 ## Template for Future Entries
 
 ```markdown

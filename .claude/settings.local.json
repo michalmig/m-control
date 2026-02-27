@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ide__getDiagnostics",
+      "Bash(yarn build:*)",
+      "Bash(yarn install:*)",
+      "Bash(yarn typecheck:*)"
+    ]
+  }
+}

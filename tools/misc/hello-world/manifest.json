@@ -1,0 +1,11 @@
+{
+  "manifestVersion": 1,
+  "id": "hello-world",
+  "version": "0.1.0",
+  "name": "Hello World",
+  "description": "Sanity-check tool — verifies the runtime pipeline end to end",
+  "runtime": "node",
+  "entry": "index.js",
+  "requiredConfig": [],
+  "tags": ["misc", "debug"]
+}

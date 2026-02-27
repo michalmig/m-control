@@ -1,418 +1,197 @@
-# Execution Model
+# Execution Model — Tool Protocol v1
 
-How m-control executes commands from user input to completion.
+How the orchestrator discovers, invokes, and processes output from tools.
 
-## 🎯 Execution Modes
+> **Decision reference:** [ADR-0003](../adr/0003-ndjson-protocol.md) — why NDJSON over stdin/stdout
 
-m-control supports two execution modes:
+---
 
-### 1. Interactive Mode
-**Trigger:** User runs `mctl` or `mm` without arguments
+## Overview
 
-**Flow:**
 ```
-User → TUI → Category Selection → Command Selection → Execute
-```
-
-### 2. Direct Mode
-**Trigger:** User runs `mctl <command-id>` with command name
-
-**Flow:**
-```
-User → CLI Parser → Command Lookup → Execute
+mctl run <id>
+     │
+     ▼
+[Discovery] scan tools/**/manifest.json
+     │  reads: manifestVersion, id, runtime, entry
+     ▼
+[Config] load ~/.m-control/config.json
+     │  extracts: required config keys for this tool
+     ▼
+[Runner] spawn child process
+     │  writes: ToolRequest JSON → stdin
+     │  reads:  ToolEvent NDJSON ← stdout (line by line)
+     │  reads:  raw text ← stderr (logged, not parsed)
+     ▼
+[EventSink] renders events → terminal (or passthrough with --json)
+     │
+     ▼
+exit code → 0 ok / 1 expected failure / ≥2 crash
 ```
 
 ---
 
-## 🔄 Detailed Execution Flow
+## Tool Protocol v1
 
-### Interactive Mode Flow
+### Channels
 
-```
-┌─────────────────────────────────────────────┐
-│ 1. User runs: mctl                          │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 2. Entry Point (src/index.ts)              │
-│    ├─ Parse args: none                      │
-│    └─ Route to: runInteractive()            │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 3. Check Config (src/ui/interactive.ts)    │
-│    ├─ configExists()                        │
-│    ├─ If NO: initConfig() → Show message   │
-│    └─ If YES: Continue                      │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 4. Category Selection (TUI)                │
-│    ├─ Load commandGroups from registry     │
-│    ├─ Display categories (prompts)         │
-│    └─ Wait for user selection              │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 5. Command Selection (TUI)                 │
-│    ├─ Load commands from selected category │
-│    ├─ Display commands (prompts)           │
-│    └─ Wait for user selection              │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 6. Execute Command                          │
-│    ├─ Lookup handler from registry         │
-│    └─ await command.handler()               │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 7. Display Result                           │
-│    └─ Show success/error to user            │
-└─────────────────────────────────────────────┘
-```
+| Channel | Direction | Format | Purpose |
+|---------|-----------|--------|---------|
+| `stdin` | orchestrator → tool | Single JSON object | `ToolRequest` (context + input) |
+| `stdout` | tool → orchestrator | NDJSON (one event per line) | `ToolEvent` stream |
+| `stderr` | tool → orchestrator | Raw text | Diagnostic logs, stack traces |
+| Exit code | tool → OS | Integer | `0` success / `1` expected failure / `≥2` crash |
 
-### Direct Mode Flow
-
-```
-┌─────────────────────────────────────────────┐
-│ 1. User runs: mctl hello-world              │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 2. Entry Point (src/index.ts)              │
-│    ├─ Parse args: ['hello-world']          │
-│    └─ Route to: direct execution            │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 3. Command Lookup                           │
-│    ├─ findCommand('hello-world')           │
-│    ├─ If NOT FOUND: Show error             │
-│    └─ If FOUND: Get handler                 │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 4. Execute Command                          │
-│    └─ await command.handler()               │
-└────────────┬────────────────────────────────┘
-             ▼
-┌─────────────────────────────────────────────┐
-│ 5. Display Result                           │
-│    └─ Show success/error to user            │
-└─────────────────────────────────────────────┘
-```
+**Critical rule:** `stdout` is exclusively NDJSON `ToolEvent` lines.  
+All human-readable messages must be `log` events or go to `stderr`.  
+A tool emitting raw text to stdout breaks the orchestrator's parser.
 
 ---
 
-## 🏭 Plugin Execution Types
+### stdin — ToolRequest
 
-### Internal Plugin Execution (TypeScript)
+Written once by the orchestrator before the tool starts executing.  
+Tools must read stdin to EOF, then parse as JSON.
 
 ```typescript
-// 1. Lookup from registry
-const command = findCommand('hello-world');
+interface ToolRequest {
+  context: RunContext;
+  input: ToolInput;   // arbitrary, tool-defined
+}
 
-// 2. Call handler directly (in-process)
-try {
-  await command.handler();
-  // Success
-} catch (error) {
-  // Error handling
-  logger.error('Command failed', { error });
-  throw error;
+interface RunContext {
+  toolId: string;
+  config: Record<string, unknown>; // flat key-value, e.g. { "azdo.token": "..." }
+  workspaceRoot: string;           // absolute path to project root
 }
 ```
 
-**Characteristics:**
-- **Speed:** Fast (no process spawn)
-- **Memory:** Shared with orchestrator
-- **Isolation:** Same process (crash affects orchestrator)
-- **Communication:** Direct function calls
-
-### External Plugin Execution (Polyglot)
-
-```typescript
-// 1. Prepare input
-const input = {
-  toolId: 'k8s-pod-inspector',
-  params: { namespace: 'prod' },
-  config: getToolConfig('k8s')
-};
-
-const inputFile = '/tmp/input-123.json';
-const outputFile = '/tmp/output-123.json';
-fs.writeFileSync(inputFile, JSON.stringify(input));
-
-// 2. Spawn process
-const proc = spawn('python', [
-  'tools/k8s/main.py',
-  '--input', inputFile,
-  '--output', outputFile
-], {
-  stdio: 'inherit' // Show tool's output
-});
-
-// 3. Wait for completion
-await new Promise((resolve, reject) => {
-  proc.on('close', (code) => {
-    if (code === 0) resolve();
-    else reject(new Error(`Tool exited with code ${code}`));
-  });
-});
-
-// 4. Read result
-const output = JSON.parse(fs.readFileSync(outputFile, 'utf-8'));
-
-// 5. Cleanup
-fs.unlinkSync(inputFile);
-fs.unlinkSync(outputFile);
-
-// 6. Return
-return output;
-```
-
-**Characteristics:**
-- **Speed:** Slower (process spawn ~50-200ms)
-- **Memory:** Separate process
-- **Isolation:** Process isolated (crash doesn't affect orchestrator)
-- **Communication:** JSON files or stdin/stdout
-
----
-
-## ⚡ Performance Considerations
-
-### Internal Plugin
-- **Startup:** ~0ms (already in process)
-- **Memory:** Shared (~0 overhead)
-- **Best for:** Frequent commands, simple operations
-
-### External Plugin
-- **Startup:** ~50-200ms (process spawn)
-- **Memory:** Separate process (~10-50MB depending on runtime)
-- **Best for:** Heavy operations, isolation needed, non-JS languages
-
----
-
-## 🛡️ Error Handling
-
-### Error Propagation
-
-```typescript
-// Plugin throws error
-export async function execute() {
-  throw new ToolError('API token invalid', 'AUTH_ERROR', true);
-}
-
-// Orchestrator catches
-try {
-  await command.handler();
-} catch (error) {
-  if (error instanceof ToolError) {
-    // Structured error
-    console.error(`❌ ${error.message}`);
-    if (error.recoverable) {
-      console.error('Hint: Check your config in ~/.m-control/config.json');
-    }
-  } else {
-    // Unexpected error
-    console.error('❌ Unexpected error occurred');
-    logger.error('Unhandled error', { error });
-  }
-  process.exit(1);
-}
-```
-
-### Error Types
-
-```typescript
-class ToolError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public recoverable: boolean
-  ) {
-    super(message);
+**Example:**
+```json
+{
+  "context": {
+    "toolId": "azdo-pr-review",
+    "config": {
+      "azdo.token": "pat-xxxx",
+      "azdo.organization": "myorg"
+    },
+    "workspaceRoot": "/home/michal/projects/myrepo"
+  },
+  "input": {
+    "prId": 42
   }
 }
-
-// Examples
-new ToolError('Token invalid', 'AUTH_ERROR', true);  // User can fix
-new ToolError('Network timeout', 'NETWORK_ERROR', true); // Retry possible
-new ToolError('Internal bug', 'INTERNAL_ERROR', false); // Report bug
 ```
 
 ---
 
-## ⏱️ Timeout Handling
+### stdout — ToolEvent NDJSON stream
 
-### Future Implementation
-```typescript
-async function executeWithTimeout(
-  handler: () => Promise<void>,
-  timeoutMs: number = 60000
-): Promise<void> {
-  return Promise.race([
-    handler(),
-    new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), timeoutMs)
-    )
-  ]);
-}
-
-// Usage
-await executeWithTimeout(command.handler, 30000); // 30s timeout
-```
-
----
-
-## 🔄 Lifecycle Hooks (Future)
-
-Potential future hooks for plugins:
+Every line is a complete JSON object. No partial lines. No blank lines.
 
 ```typescript
-interface Plugin {
-  // Before execution
-  onBeforeExecute?(context: PluginContext): Promise<void>;
-  
-  // Main execution
-  execute(context: PluginContext): Promise<void>;
-  
-  // After execution (success or failure)
-  onAfterExecute?(context: PluginContext, result: any): Promise<void>;
-  
-  // Cleanup (always runs)
-  onCleanup?(context: PluginContext): Promise<void>;
+interface BaseEvent {
+  type: 'started' | 'log' | 'result' | 'error';
+  ts: string;       // ISO-8601, set by the TOOL at emission time
+  toolId: string;   // must match manifest.id
+  payload: unknown;
 }
 ```
 
-**Use cases:**
-- **onBeforeExecute:** Validate config, check prerequisites
-- **execute:** Main logic
-- **onAfterExecute:** Log telemetry, update cache
-- **onCleanup:** Delete temp files, close connections
+#### Event types
+
+**`started`** — emitted immediately after tool init, before any work:
+```json
+{"type":"started","ts":"2025-02-25T10:00:00.000Z","toolId":"hello-world","payload":{}}
+```
+
+**`log`** — structured human output:
+```json
+{"type":"log","ts":"...","toolId":"hello-world","payload":{"level":"info","message":"Fetching PR #42"}}
+```
+Levels: `debug | info | warn | error`
+
+**`result`** — final payload (last one wins if multiple):
+```json
+{"type":"result","ts":"...","toolId":"hello-world","payload":{"review":"LGTM"}}
+```
+
+**`error`** — structured failure:
+```json
+{"type":"error","ts":"...","toolId":"hello-world","payload":{"message":"PAT expired","code":"AUTH_FAILED","recoverable":true}}
+```
+`recoverable: true` = user can fix  
+`recoverable: false` = bug, should be reported
 
 ---
 
-## 📊 Execution Context (Future)
+### Exit codes
 
-Context passed to every plugin:
+| Code | Meaning | Expected events |
+|------|---------|-----------------|
+| `0` | Success | `started`, optional `log`s, `result` |
+| `1` | Expected failure | `started`, optional `log`s, `error` |
+| `≥2` | Crash | Anything or nothing — treat as unrecoverable |
+
+---
+
+## Runner Guardrails
+
+| Guardrail | Default | Behaviour when hit |
+|-----------|---------|-------------------|
+| `timeoutMs` | 30,000ms | SIGTERM → error event → caller notified |
+| `maxOutputBytes` | 10 MB | SIGTERM → error event |
+| `maxEvents` | 10,000 | SIGTERM → error event |
+
+Guardrail hits surface as `ErrorEvent` with `code: 'RUNNER_GUARDRAIL'`.
+
+---
+
+## Runner Interface
 
 ```typescript
-interface PluginContext {
-  // Config
-  getConfig<T>(key: string): T;
-  
-  // Logging
-  log: Logger;
-  
-  // Temp files
-  getTempDir(): string;
-  
-  // HTTP client (with auth)
-  getHttpClient(service: string): HttpClient;
-  
-  // User info
-  getUserId(): string;
-  
-  // Telemetry
-  trackEvent(name: string, data: any): void;
+interface Runner {
+  run(
+    manifest: ToolManifest,
+    context: RunContext,
+    input: ToolInput,
+    options?: RunnerOptions,
+  ): AsyncIterable<ToolEvent>;
 }
 ```
 
 ---
 
-## 🎯 Execution Guarantees
+## CLI Modes
 
-### What m-control GUARANTEES:
-- ✅ Plugins execute in order (sequential, not parallel - for now)
-- ✅ Config loaded before execution
-- ✅ Errors don't crash orchestrator (external plugins)
-- ✅ Temp files cleaned up (external plugins)
-
-### What m-control DOES NOT GUARANTEE:
-- ❌ Plugins complete (user can Ctrl+C)
-- ❌ Specific execution order if multiple commands (future feature)
-- ❌ Atomic operations (plugin responsible for transaction handling)
-- ❌ Retry on failure (plugin must implement retry logic)
-
----
-
-## 🔒 Security & Isolation
-
-### Internal Plugins
-- **Process isolation:** NO (same process)
-- **Memory isolation:** NO (shared heap)
-- **File system:** Full access (uses Node.js permissions)
-- **Network:** Full access
-
-**Trust model:** Internal plugins are trusted code.
-
-### External Plugins
-- **Process isolation:** YES (separate OS process)
-- **Memory isolation:** YES (separate address space)
-- **File system:** OS-level permissions
-- **Network:** OS-level permissions
-
-**Trust model:** External plugins sandboxed by OS.
-
----
-
-## 📈 Scaling Considerations
-
-### Current (MVP)
-- **Execution:** Sequential (one command at a time)
-- **Concurrency:** None
-- **Parallelism:** None
-
-### Future (v0.5+)
-- **Execution:** Configurable (sequential or parallel)
-- **Concurrency:** Multiple commands in same session
-- **Parallelism:** Multiple external tools simultaneously
-
-**Example use case:**
 ```bash
-mctl batch \
-  --run "azdo-review --pr 123" \
-  --run "k8s-logs --namespace prod" \
-  --parallel
+# Pretty-print (default)
+mctl run hello-world
+
+# NDJSON passthrough — for piping / scripting
+mctl run hello-world --json
 ```
 
 ---
 
-## 🧪 Testing Execution
+## Tool Implementation Checklist
 
-### Unit Test (Internal Plugin)
-```typescript
-test('executes hello-world', async () => {
-  const spy = jest.spyOn(console, 'log');
-  await execute();
-  expect(spy).toHaveBeenCalledWith('Hello World!');
-});
-```
-
-### Integration Test (External Plugin)
-```typescript
-test('executes python plugin', async () => {
-  const result = await executeTool({
-    id: 'test-tool',
-    executable: 'python',
-    entryPoint: 'test.py'
-  }, {}, {});
-  
-  expect(result.success).toBe(true);
-});
-```
+- [ ] Read all of stdin, parse as `ToolRequest` JSON
+- [ ] Emit `started` event before doing any work
+- [ ] All human output → `log` events or stderr (never raw stdout)
+- [ ] Emit `result` on success, `error` on expected failure
+- [ ] Set `ts` (ISO string) and `toolId` in every event
+- [ ] Exit 0 / 1 / ≥2 appropriately
 
 ---
 
-## 📚 Related Docs
+## Related Docs
 
-- [Plugin Contract](plugin-contract.md) - Plugin requirements
-- [Context Model](context-model.md) - Context flow
-- [Constraints](constraints.md) - Execution rules
+- [Plugin Contract](plugin-contract.md)
+- [ADR-0003](../adr/0003-ndjson-protocol.md) — protocol design rationale
+- [ADR-0002](../adr/0002-monorepo-workspaces.md) — monorepo structure
 
 ---
 
-**Last updated:** 2025-02-18  
-**Next review:** After parallel execution implementation
+**Last updated:** 2025-02-25 — Rewritten for Tool Protocol v1  
+**Supersedes:** Previous temp-file-based execution model
