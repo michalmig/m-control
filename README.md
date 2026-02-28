@@ -1,145 +1,106 @@
 # m-control
 
-Michał's personal command center - a CLI toolset for development and operational tasks.
+Michał's personal CLI orchestrator — discovers and runs standalone tool processes from a single `mctl` command. Evolving toward a SaaS product for developer teams.
 
 ## Features
 
-- 🎯 Interactive TUI for easy command selection
-- ⚡ Direct command execution
-- 🔧 Extensible architecture for custom tools
-- 🌐 Cross-platform support (Windows primary, Linux secondary)
+- Tool discovery — drop a `manifest.json` in `tools/`, it just works
+- NDJSON event streaming — live progress from long-running tools
+- Polyglot runtime — tools can be Node.js, Python, .NET, or anything else
+- Cross-platform — Windows primary, Linux secondary
 
 ## Requirements
 
 - Node.js 18.0.0 or higher
+- Yarn 1.22+
+
+## Project structure
+
+```
+m-control/
+├── apps/mctl/          # CLI binary (@m-control/mctl)
+│   └── dist/bundle/    # Build output — index.js (ncc bundle)
+├── packages/core/      # Runtime engine (@m-control/core) — library only
+├── tools/              # Standalone tool processes (NOT npm packages)
+│   └── misc/
+│       └── hello-world/
+├── templates/          # Boilerplate for new tools
+├── docs/               # Architecture docs, ADRs, AI context
+└── scripts/            # install.ps1 (Windows)
+```
 
 ## Installation
 
 ### Windows
 
-Run the installation script in PowerShell:
-
 ```powershell
 .\scripts\install.ps1
 ```
 
-This will:
-- Build the project
-- Install to `%USERPROFILE%\.m-control`
-- Add to PATH
-- Initialize configuration
+This builds the project, copies `apps/mctl/dist/bundle/index.js` to `%USERPROFILE%\.m-control\`, adds `mctl` to PATH, and initializes config.
 
-**After installation, restart your terminal.**
+**Restart your terminal after installation.**
 
 ## Usage
 
-### Interactive Mode
-
 ```bash
-mctl    # or use alias: mm
+mctl list               # list all discovered tools
+mctl run hello-world    # run the hello-world tool
+mctl --help             # show help
 ```
 
-Navigate through categories and select commands using arrow keys.
+## Build
 
-### Direct Command Execution
+Always run from the monorepo root:
 
 ```bash
-mctl hello-world
-mctl --help
+yarn install
+yarn build
 ```
 
-## Configuration
+Build order is enforced: `@m-control/core` is built first, then `@m-control/mctl`. The final output is `apps/mctl/dist/bundle/index.js`.
 
-Configuration is stored in `%USERPROFILE%\.m-control\config.json` (Windows) or `~/.m-control/config.json` (Linux).
+To verify:
 
-On first run, a template config will be created. Fill in your credentials as needed:
-
-```json
-{
-  "version": "0.1.0",
-  "tools": {
-    "azdo": {
-      "token": "your-azure-devops-token",
-      "organization": "your-org"
-    },
-    "k8s": {
-      "defaultContext": "your-context"
-    },
-    "obsidian": {
-      "vaultPath": "C:\\path\\to\\vault"
-    }
-  }
-}
+```bash
+node apps/mctl/dist/bundle/index.js --help
 ```
 
 ## Development
 
-### Setup
-
 ```bash
-npm install
+yarn typecheck     # type-check all packages
+yarn lint          # lint all packages
+yarn build         # full build (core then mctl)
 ```
 
-### Run in dev mode
+See `QUICKSTART.md` for a complete getting-started walkthrough.
 
-```bash
-npm run dev              # Interactive mode
-npm run dev hello-world  # Direct command
-```
+## Branching strategy
 
-### Build
+| Branch | Purpose |
+|--------|---------|
+| `main` | Stable, releasable. Tags here only. |
+| `develop` | Active development. Direct commits while solo. |
 
-```bash
-npm run build
-```
+CI runs on both branches. See `CONTRIBUTING.md` for details.
 
-### Lint & Format
+## Adding a tool
 
-```bash
-npm run lint
-npm run format
-```
+1. Copy `templates/tool-boilerplate/` to `tools/<category>/<id>/`
+2. Edit `manifest.json` — set `id`, `runtime`, `entry`
+3. Implement the entry file following Tool Protocol v1 (NDJSON stdout, JSON stdin)
+4. No registration needed — discovery is automatic
 
-## Adding New Commands
+See `docs/architecture/execution-model.md` for the protocol spec.
 
-1. Create command handler in `src/commands/<category>/<command-name>.ts`
-2. Add to command registry in `src/commands/index.ts`
-3. Export async function from handler
-4. Test via interactive mode and direct execution
+## Documentation
 
-Example:
-
-```typescript
-// src/commands/misc/my-command.ts
-export async function myCommand() {
-  console.log('Hello from my command!');
-}
-
-// src/commands/index.ts
-import { myCommand } from './misc/my-command';
-
-export const commandGroups: CommandGroup[] = [
-  {
-    name: 'Misc',
-    commands: [
-      {
-        id: 'my-command',
-        name: 'My Command',
-        description: 'Does something cool',
-        handler: myCommand
-      }
-    ]
-  }
-];
-```
-
-## Roadmap
-
-- [ ] Azure DevOps PR review generator
-- [ ] Kubernetes pod helper
-- [ ] Obsidian note launcher
-- [ ] Git utilities
-- [ ] System notification service
+- `QUICKSTART.md` — step-by-step first-run guide
+- `CONTRIBUTING.md` — branching, CI, commit conventions
+- `docs/ai/PROJECT-CONTEXT.md` — AI session primer
+- `docs/architecture/` — architecture docs and constraints
+- `docs/adr/` — architecture decision records
 
 ## License
 

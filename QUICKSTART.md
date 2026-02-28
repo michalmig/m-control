@@ -1,283 +1,161 @@
-# m-control - Quick Start Guide
+# m-control — Quick Start
 
-## ✅ Co zostało zrobione
+## What is this?
 
-Projekt **m-control** (wersja 0.1.0) jest gotowy do użycia!
+**m-control** is a personal CLI orchestrator. You run `mctl <tool-id>` and it discovers, spawns, and streams the output of standalone tool processes.
 
-### Zaimplementowane funkcje:
+The project is a TypeScript monorepo:
 
-- ✅ TypeScript orchestrator z TUI (prompts)
-- ✅ Command registry z grupowaniem komend
-- ✅ Config manager (automatyczna inicjalizacja przy pierwszym uruchomieniu)
-- ✅ Pierwsza komenda: `hello-world`
-- ✅ Wsparcie dla aliasów: `mctl` i `mm`
-- ✅ Help command: `mctl --help`
-- ✅ Direct command execution: `mctl hello-world`
-- ✅ Interactive mode: wybór kategorii → wybór komendy
-- ✅ ESLint + Prettier (code quality)
-- ✅ VS Code / Cursor workspace config
-- ✅ Build system (TypeScript → esbuild bundle)
-- ✅ Windows installer script (PowerShell)
-- ✅ Git repository initialized
-
----
-
-## 🚀 Jak zacząć?
-
-### 1. Rozpakuj projekt
-
-```bash
-# Windows (PowerShell)
-Expand-Archive -Path m-control.tar.gz -DestinationPath C:\Dev\
-
-# Linux/macOS
-tar -xzf m-control.tar.gz -C ~/Dev/
-cd ~/Dev/m-control
+```
+m-control/
+├── apps/mctl/          # CLI binary (@m-control/mctl)
+├── packages/core/      # Runtime engine, no I/O (@m-control/core)
+├── tools/              # Standalone tool processes (NOT npm packages)
+│   └── misc/
+│       └── hello-world/
+├── templates/          # Boilerplate for new tools
+├── docs/               # Architecture docs, ADRs, AI context
+└── scripts/            # install.ps1 (Windows)
 ```
 
-### 2. Zainstaluj dependencies
+## Prerequisites
+
+- Node.js 18+
+- Yarn 1.22+
+- Git
+
+## 1. Install dependencies
+
+Always run from the monorepo root:
 
 ```bash
-npm install
+yarn install
 ```
 
-### 3. Zbuduj projekt
+## 2. Build
+
+Build order matters — `core` must be built before `mctl`:
 
 ```bash
-npm run build
+yarn build
 ```
 
-### 4. Test w trybie dev
+This runs:
+1. `yarn workspace @m-control/core build` — compiles TypeScript → `packages/core/dist/`
+2. `yarn workspace @m-control/mctl build` — compiles TypeScript, then bundles via ncc → `apps/mctl/dist/bundle/index.js`
+
+The final executable is `apps/mctl/dist/bundle/index.js` — a single self-contained Node.js file.
+
+## 3. Verify the build
 
 ```bash
-# Interactive mode
-npm run dev
-
-# Direct command
-npm run dev hello-world
-
-# Help
-npm run dev -- --help
+node apps/mctl/dist/bundle/index.js --help
 ```
 
-### 5. Instalacja systemowa (Windows)
+Expected output: help text listing available commands and flags.
+
+## 4. First commands
+
+```bash
+# List all discovered tools
+node apps/mctl/dist/bundle/index.js list
+
+# Run the hello-world tool
+node apps/mctl/dist/bundle/index.js run hello-world
+```
+
+## 5. Install system-wide (Windows)
 
 ```powershell
 .\scripts\install.ps1
 ```
 
-To:
-- Zbuduje projekt
-- Skopiuje do `%USERPROFILE%\.m-control`
-- Doda do PATH
-- Utworzy aliasy `mctl` i `mm`
-- Zainicjalizuje config
+This:
+- Builds the project
+- Copies `apps/mctl/dist/bundle/index.js` to `%USERPROFILE%\.m-control\`
+- Adds `mctl` (and alias `mm`) to your PATH
+- Initializes `~/.m-control/config.json`
 
-**WAŻNE:** Po instalacji **zrestartuj terminal**.
+**Restart your terminal after installation.**
 
-### 6. Pierwsze uruchomienie
-
-```bash
-mctl
-# lub
-mm
-```
-
-Przy pierwszym uruchomieniu:
-- Zostanie utworzony plik konfiguracyjny w `~/.m-control/config.json`
-- Uzupełnij w nim swoje tokeny/credentials
-
----
-
-## 📂 Struktura projektu
-
-```
-m-control/
-├── .vscode/              # VS Code/Cursor config
-│   ├── settings.json     # Auto-format, lint on save
-│   ├── launch.json       # Debug configs
-│   └── extensions.json   # Recommended extensions
-├── src/
-│   ├── index.ts          # Main entry point (router)
-│   ├── commands/
-│   │   ├── index.ts      # Command registry
-│   │   └── misc/
-│   │       └── hello-world.ts
-│   ├── core/
-│   │   ├── config.ts     # Config manager
-│   │   ├── tool-runner.ts # External tool executor (future)
-│   │   └── types.ts      # Shared types
-│   └── ui/
-│       └── interactive.ts # TUI (prompts)
-├── scripts/
-│   ├── bundle.js         # Build script (esbuild)
-│   └── install.ps1       # Windows installer
-├── config/
-│   └── config.template.json # Default config structure
-├── .cursorrules          # Cursor AI guidelines
-├── .eslintrc.json
-├── .prettierrc
-├── tsconfig.json
-├── package.json
-└── README.md
-```
-
----
-
-## 🔧 Development Workflow
-
-### Dodawanie nowej komendy
-
-#### 1. Utwórz handler
-
-```typescript
-// src/commands/misc/my-new-command.ts
-export async function myNewCommand(): Promise<void> {
-  console.log('Doing something cool!');
-}
-```
-
-#### 2. Dodaj do registry
-
-```typescript
-// src/commands/index.ts
-import { myNewCommand } from './misc/my-new-command';
-
-export const commandGroups: CommandGroup[] = [
-  {
-    name: 'Misc',
-    commands: [
-      // ... existing commands
-      {
-        id: 'my-new-command',
-        name: 'My New Command',
-        description: 'Does something cool',
-        handler: myNewCommand,
-      },
-    ],
-  },
-];
-```
-
-#### 3. Test
+After installing:
 
 ```bash
-npm run dev my-new-command
+mctl list
+mctl run hello-world
 ```
 
-#### 4. Build & deploy
+## Development workflow
+
+### Type-check only (fast feedback)
 
 ```bash
-npm run build
-# Następnie zainstaluj ponownie lub skopiuj dist/mctl.js
+yarn typecheck
 ```
 
----
-
-## 🎯 Następne kroki
-
-### Gotowe do implementacji:
-
-1. **Azure DevOps PR Review**
-   - Kategoria: `AZDO`
-   - Handler: pobierz diff → wywołaj Claude API → generuj .md
-
-2. **Kubernetes Helper**
-   - Kategoria: `K8s`
-   - Możliwe podejścia:
-     - TypeScript z `@kubernetes/client-node`
-     - Python tool wywołany przez tool-runner
-
-3. **Obsidian Launcher**
-   - Kategoria: `Notes`
-   - PowerShell/Node do otwierania vault
-
-4. **Git Tools**
-   - Kategoria: `Git`
-   - TypeScript z `simple-git`
-
-### Architektura dla polyglot tools:
-
-```typescript
-// Przykład: Python k8s tool
-const manifest: ToolManifest = {
-  id: 'k8s-pods',
-  name: 'K8s Pod Inspector',
-  executable: 'python',
-  entryPoint: 'tools/k8s/main.py',
-};
-
-await executeTool(manifest, { namespace: 'prod' }, config);
-```
-
----
-
-## 🐛 Debugging
-
-### VS Code / Cursor
-
-1. Otwórz projekt w Cursor
-2. Przejdź do Debug panel (Ctrl+Shift+D)
-3. Wybierz:
-   - "Debug: Interactive Mode" - uruchomi `mctl` w trybie interaktywnym
-   - "Debug: Hello World" - uruchomi `mctl hello-world`
-4. Ustaw breakpointy w kodzie
-5. F5 → debug!
-
-### Manual
+### Lint
 
 ```bash
-# Uruchom z ts-node bezpośrednio
-npx ts-node src/index.ts
-npx ts-node src/index.ts hello-world
+yarn lint
 ```
 
----
-
-## 📋 Available Scripts
+### Full build
 
 ```bash
-npm run dev              # Run in dev mode (ts-node)
-npm run build            # Build (tsc + esbuild)
-npm run lint             # Check code quality
-npm run format           # Auto-fix formatting
+yarn build
 ```
 
----
+### Watch mode (core only)
 
-## ⚙️ Konfiguracja
-
-Plik: `~/.m-control/config.json`
-
-```json
-{
-  "version": "0.1.0",
-  "tools": {
-    "azdo": {
-      "token": "your-pat-token-here",
-      "organization": "your-org"
-    },
-    "k8s": {
-      "defaultContext": "your-k8s-context"
-    },
-    "obsidian": {
-      "vaultPath": "C:\\path\\to\\obsidian\\vault"
-    }
-  }
-}
+```bash
+yarn workspace @m-control/core dev
 ```
 
----
+### Run without installing
 
-## 🎉 Gotowe!
+```bash
+node apps/mctl/dist/bundle/index.js <command>
+```
 
-Projekt jest w pełni funkcjonalny. Możesz:
+## Adding a new tool
 
-1. ✅ Uruchomić `mctl` / `mm` (interactive mode)
-2. ✅ Wywołać `mctl hello-world` (direct command)
-3. ✅ Dodawać nowe komendy
-4. ✅ Używać w Cursor z AI assistance
-5. ✅ Debugować w VS Code
-6. ✅ Rozbudowywać o polyglot tools (Python, .NET, etc.)
+1. Copy the boilerplate:
+   ```bash
+   cp -r templates/tool-boilerplate tools/<category>/<tool-id>
+   ```
 
-**Powodzenia w budowaniu swojego command center!** 🚀
+2. Edit `tools/<category>/<tool-id>/manifest.json`:
+   ```json
+   {
+     "manifestVersion": 1,
+     "id": "my-tool",
+     "name": "My Tool",
+     "runtime": "node",
+     "entry": "index.js"
+   }
+   ```
+
+3. Implement `tools/<category>/<tool-id>/index.js` following the Tool Protocol:
+   - Read all of `stdin` before doing work (JSON `ToolRequest`)
+   - Emit NDJSON `ToolEvent` lines to `stdout`
+   - Never use `console.log` to stdout (breaks the NDJSON parser)
+
+4. No registration needed — `discoverTools()` finds tools automatically.
+
+5. Test:
+   ```bash
+   node apps/mctl/dist/bundle/index.js run my-tool
+   ```
+
+See `docs/architecture/execution-model.md` for the full Tool Protocol spec.
+
+## Project docs
+
+| File | Purpose |
+|------|---------|
+| `docs/ai/PROJECT-CONTEXT.md` | AI session primer — read this first |
+| `docs/architecture/constraints.md` | Hard rules (the constitution) |
+| `docs/architecture/execution-model.md` | Tool Protocol v1 spec |
+| `docs/ai/CODING-GUIDELINES.md` | Patterns and naming conventions |
+| `docs/adr/` | Architecture Decision Records |
+| `CONTRIBUTING.md` | Branching strategy, CI, commit conventions |
