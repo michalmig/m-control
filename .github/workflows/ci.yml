@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Build core
+        run: yarn workspace @m-control/core build
+
       - name: Typecheck
         run: yarn typecheck
 
