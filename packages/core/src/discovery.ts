@@ -77,7 +77,7 @@ export function loadManifest(manifestPath: string): DiscoveredTool {
     raw = fs.readFileSync(manifestPath, 'utf-8');
   } catch (err) {
     throw new ManifestError(
-      `Cannot read manifest at ${manifestPath}: ${err instanceof Error ? err.message : String(err)}`,
+      `Cannot read manifest at ${manifestPath}: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 
@@ -85,7 +85,9 @@ export function loadManifest(manifestPath: string): DiscoveredTool {
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    throw new ManifestError(`Invalid JSON in manifest ${manifestPath}: ${err instanceof Error ? err.message : String(err)}`);
+    throw new ManifestError(
+      `Invalid JSON in manifest ${manifestPath}: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
 
   const manifest = validateManifest(parsed, manifestPath);
@@ -132,7 +134,7 @@ function validateManifest(raw: unknown, filePath: string): ToolManifest {
   if (obj['manifestVersion'] !== MANIFEST_VERSION) {
     err(
       `unsupported manifestVersion: ${String(obj['manifestVersion'])}. ` +
-        `Expected ${MANIFEST_VERSION}. Update the tool or the orchestrator.`,
+        `Expected ${MANIFEST_VERSION}. Update the tool or the orchestrator.`
     );
   }
 
@@ -153,7 +155,9 @@ function validateManifest(raw: unknown, filePath: string): ToolManifest {
 
   const validRuntimes = ['node', 'python', 'dotnet', 'powershell'];
   if (!validRuntimes.includes(obj['runtime'] as string)) {
-    err(`unknown runtime "${String(obj['runtime'])}". Valid: ${validRuntimes.join(', ')}`);
+    err(
+      `unknown runtime "${String(obj['runtime'])}". Valid: ${validRuntimes.join(', ')}`
+    );
   }
 
   // id must be kebab-case

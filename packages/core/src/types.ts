@@ -209,7 +209,7 @@ export interface Runner {
     tool: ResolvedTool,
     context: RunContext,
     input: ToolInput,
-    options?: RunnerOptions,
+    options?: RunnerOptions
   ): AsyncIterable<ToolEvent>;
 }
 

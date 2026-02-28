@@ -10,7 +10,7 @@ export class MControlError extends Error {
   constructor(
     message: string,
     /** Machine-readable code for programmatic handling. */
-    public readonly code: string,
+    public readonly code: string
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -42,10 +42,7 @@ export class DiscoveryError extends MControlError {
 
 /** Tool execution failed at the runner level (process spawn, timeout, etc.). */
 export class RunnerError extends MControlError {
-  constructor(
-    message: string,
-    code: string = 'RUNNER_ERROR',
-  ) {
+  constructor(message: string, code: string = 'RUNNER_ERROR') {
     super(message, code);
   }
 }
@@ -54,7 +51,7 @@ export class RunnerError extends MControlError {
 export class RunnerGuardrailError extends RunnerError {
   constructor(
     message: string,
-    public readonly guardrail: 'maxOutputBytes' | 'maxEvents' | 'timeout',
+    public readonly guardrail: 'maxOutputBytes' | 'maxEvents' | 'timeout'
   ) {
     super(message, 'RUNNER_GUARDRAIL');
   }
@@ -63,6 +60,9 @@ export class RunnerGuardrailError extends RunnerError {
 /** Runtime not yet implemented. */
 export class NotImplementedError extends MControlError {
   constructor(runtime: string) {
-    super(`Runner for runtime '${runtime}' is not yet implemented.`, 'NOT_IMPLEMENTED');
+    super(
+      `Runner for runtime '${runtime}' is not yet implemented.`,
+      'NOT_IMPLEMENTED'
+    );
   }
 }

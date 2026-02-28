@@ -11,7 +11,8 @@ import { runRun } from './commands/run';
 // ---------------------------------------------------------------------------
 
 function showHelp(): void {
-  console.log(`
+  console.log(
+    `
 m-control — Michał's personal command center
 
 Usage:
@@ -23,7 +24,8 @@ Usage:
 
 Configuration:
   ~/.m-control/config.json
-  `.trim());
+  `.trim()
+  );
 }
 
 // ---------------------------------------------------------------------------

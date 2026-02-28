@@ -19,7 +19,9 @@ function findToolsRoot(): string {
 function renderList(result: DiscoveryResult): void {
   if (result.errors.length > 0) {
     for (const { file, error } of result.errors) {
-      process.stderr.write(`[warn] Skipping invalid manifest: ${file}\n       ${error}\n`);
+      process.stderr.write(
+        `[warn] Skipping invalid manifest: ${file}\n       ${error}\n`
+      );
     }
   }
 
@@ -31,8 +33,14 @@ function renderList(result: DiscoveryResult): void {
 
   // Calculate column widths for alignment
   const idWidth = Math.max(4, ...result.tools.map((t) => t.manifest.id.length));
-  const versionWidth = Math.max(7, ...result.tools.map((t) => t.manifest.version.length));
-  const runtimeWidth = Math.max(7, ...result.tools.map((t) => t.manifest.runtime.length));
+  const versionWidth = Math.max(
+    7,
+    ...result.tools.map((t) => t.manifest.version.length)
+  );
+  const runtimeWidth = Math.max(
+    7,
+    ...result.tools.map((t) => t.manifest.runtime.length)
+  );
 
   const header =
     'ID'.padEnd(idWidth) +
@@ -62,7 +70,9 @@ function renderList(result: DiscoveryResult): void {
   }
 
   console.log('');
-  console.log(`${result.tools.length} tool${result.tools.length === 1 ? '' : 's'} found.`);
+  console.log(
+    `${result.tools.length} tool${result.tools.length === 1 ? '' : 's'} found.`
+  );
   console.log('');
 }
 

@@ -56,7 +56,7 @@ export async function runRun(args: string[]): Promise<void> {
     initConfig();
     console.error(
       `Config initialised at ~/.m-control/config.json\n` +
-      `Fill in your credentials and run 'mctl run ${toolId}' again.`,
+        `Fill in your credentials and run 'mctl run ${toolId}' again.`
     );
     process.exit(1);
   }
@@ -65,7 +65,9 @@ export async function runRun(args: string[]): Promise<void> {
   try {
     config = loadConfig();
   } catch (err) {
-    console.error(`Config error: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(
+      `Config error: ${err instanceof Error ? err.message : String(err)}`
+    );
     process.exit(1);
   }
 
@@ -76,7 +78,9 @@ export async function runRun(args: string[]): Promise<void> {
   const { tools, errors: discoveryErrors } = discoverTools(toolsRoot);
 
   for (const { file, error } of discoveryErrors) {
-    process.stderr.write(`[warn] skipping invalid manifest: ${file}\n       ${error}\n`);
+    process.stderr.write(
+      `[warn] skipping invalid manifest: ${file}\n       ${error}\n`
+    );
   }
 
   const tool = tools.find((t) => t.manifest.id === toolId);
@@ -91,7 +95,10 @@ export async function runRun(args: string[]): Promise<void> {
   // -------------------------------------------------------------------------
   // Build RunContext
   // -------------------------------------------------------------------------
-  const toolConfig = extractToolConfig(config, tool.manifest.requiredConfig ?? []);
+  const toolConfig = extractToolConfig(
+    config,
+    tool.manifest.requiredConfig ?? []
+  );
   const workspaceRoot = path.resolve(__dirname, '../../../..');
 
   const context: RunContext = {
@@ -118,7 +125,9 @@ export async function runRun(args: string[]): Promise<void> {
     }
     sink.flush?.();
   } catch (err) {
-    console.error(`Runner error: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(
+      `Runner error: ${err instanceof Error ? err.message : String(err)}`
+    );
     process.exit(1);
   }
 }

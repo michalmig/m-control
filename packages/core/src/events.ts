@@ -1,4 +1,10 @@
-import { ToolEvent, StartedEvent, LogEvent, ResultEvent, ErrorEvent } from './types';
+import {
+  ToolEvent,
+  StartedEvent,
+  LogEvent,
+  ResultEvent,
+  ErrorEvent,
+} from './types';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -107,7 +113,10 @@ export class ConsoleEventSink implements EventSink {
     const hasPayload =
       payload !== null &&
       payload !== undefined &&
-      !(typeof payload === 'object' && Object.keys(payload as object).length === 0);
+      !(
+        typeof payload === 'object' &&
+        Object.keys(payload as object).length === 0
+      );
 
     process.stdout.write('\u2713 Done\n');
 
@@ -122,7 +131,9 @@ export class ConsoleEventSink implements EventSink {
     process.stderr.write(`\u2717 ${message}${codeStr}\n`);
 
     if (recoverable) {
-      process.stderr.write(`  Hint: check your config or input and try again.\n`);
+      process.stderr.write(
+        `  Hint: check your config or input and try again.\n`
+      );
     } else {
       process.stderr.write(`  This looks like a bug. Please report it.\n`);
     }
@@ -130,10 +141,10 @@ export class ConsoleEventSink implements EventSink {
 }
 
 const LOG_ICONS: Record<'debug' | 'info' | 'warn' | 'error', string> = {
-  debug: '\u25AA',  // ▪
-  info:  '\u2139',  // ℹ
-  warn:  '\u26A0',  // ⚠
-  error: '\u2716',  // ✖
+  debug: '\u25AA', // ▪
+  info: '\u2139', // ℹ
+  warn: '\u26A0', // ⚠
+  error: '\u2716', // ✖
 };
 
 // ---------------------------------------------------------------------------
@@ -168,7 +179,7 @@ export class JsonEventSink implements EventSink {
  */
 export function createEventSink(
   jsonMode: boolean,
-  options?: ConsoleEventSinkOptions,
+  options?: ConsoleEventSinkOptions
 ): EventSink {
   return jsonMode ? new JsonEventSink() : new ConsoleEventSink(options);
 }

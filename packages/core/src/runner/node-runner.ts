@@ -47,7 +47,7 @@ export class NodeRunner implements Runner {
     tool: ResolvedTool,
     context: RunContext,
     input: ToolInput,
-    options?: RunnerOptions,
+    options?: RunnerOptions
   ): AsyncIterable<ToolEvent> {
     if (tool.manifest.runtime !== 'node') {
       throw new NotImplementedError(tool.manifest.runtime);
@@ -69,7 +69,7 @@ async function* spawnAndStream(
   entryPath: string,
   requestJson: string,
   toolId: string,
-  opts: Required<RunnerOptions>,
+  opts: Required<RunnerOptions>
 ): AsyncIterable<ToolEvent> {
   // Bridge between event-based child process API and async generator:
   // child process pushes items into queue, generator pulls them.
@@ -81,9 +81,15 @@ async function* spawnAndStream(
   const queue: QueueItem[] = [];
   let wakeUp: (() => void) | null = null;
   const notify = (): void => {
-    if (wakeUp) { wakeUp(); wakeUp = null; }
+    if (wakeUp) {
+      wakeUp();
+      wakeUp = null;
+    }
   };
-  const push = (item: QueueItem): void => { queue.push(item); notify(); };
+  const push = (item: QueueItem): void => {
+    queue.push(item);
+    notify();
+  };
 
   // -------------------------------------------------------------------------
   // Spawn
@@ -96,7 +102,7 @@ async function* spawnAndStream(
     });
   } catch (err) {
     throw new RunnerError(
-      `Failed to spawn tool at ${entryPath}: ${err instanceof Error ? err.message : String(err)}`,
+      `Failed to spawn tool at ${entryPath}: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 
@@ -113,7 +119,7 @@ async function* spawnAndStream(
       event: makeErrorEvent(
         toolId,
         `Tool exceeded timeout of ${opts.timeoutMs}ms`,
-        'RUNNER_TIMEOUT',
+        'RUNNER_TIMEOUT'
       ),
     });
   }, opts.timeoutMs);
@@ -125,7 +131,7 @@ async function* spawnAndStream(
     if (writeErr && !guardrailHit) {
       // Process likely died before reading - will be caught by 'error' or 'close'
       process.stderr.write(
-        `[runner:${toolId}] stdin write error: ${writeErr.message}\n`,
+        `[runner:${toolId}] stdin write error: ${writeErr.message}\n`
       );
     }
     proc.stdin!.end();
@@ -158,7 +164,7 @@ async function* spawnAndStream(
         event: makeErrorEvent(
           toolId,
           `Tool stdout exceeded maxOutputBytes limit (${opts.maxOutputBytes} bytes)`,
-          'RUNNER_MAX_OUTPUT_BYTES',
+          'RUNNER_MAX_OUTPUT_BYTES'
         ),
       });
       return;
@@ -186,7 +192,7 @@ async function* spawnAndStream(
           event: makeErrorEvent(
             toolId,
             `Tool exceeded maxEvents limit (${opts.maxEvents} events)`,
-            'RUNNER_MAX_EVENTS',
+            'RUNNER_MAX_EVENTS'
           ),
         });
         break;
@@ -210,7 +216,10 @@ async function* spawnAndStream(
   // -------------------------------------------------------------------------
   proc.on('error', (err) => {
     clearTimeout(timeoutHandle);
-    push({ kind: 'error', err: new RunnerError(`Process error for ${toolId}: ${err.message}`) });
+    push({
+      kind: 'error',
+      err: new RunnerError(`Process error for ${toolId}: ${err.message}`),
+    });
   });
 
   proc.on('close', (code) => {
@@ -223,7 +232,7 @@ async function* spawnAndStream(
         event: makeErrorEvent(
           toolId,
           `Tool crashed with exit code ${code}`,
-          'TOOL_CRASH',
+          'TOOL_CRASH'
         ),
       });
     }
@@ -250,7 +259,9 @@ async function* spawnAndStream(
     }
 
     // Queue empty - suspend until child process pushes something
-    await new Promise<void>((r) => { wakeUp = r; });
+    await new Promise<void>((r) => {
+      wakeUp = r;
+    });
   }
 }
 
@@ -268,7 +279,9 @@ function parseLine(line: string, toolId: string): ToolEvent | null {
   }
 
   if (!isToolEvent(parsed)) {
-    process.stderr.write(`[runner:${toolId}] unexpected stdout shape: ${line}\n`);
+    process.stderr.write(
+      `[runner:${toolId}] unexpected stdout shape: ${line}\n`
+    );
     return null;
   }
 
@@ -286,7 +299,11 @@ function isToolEvent(val: unknown): val is ToolEvent {
   );
 }
 
-function makeErrorEvent(toolId: string, message: string, code: string): ToolEvent {
+function makeErrorEvent(
+  toolId: string,
+  message: string,
+  code: string
+): ToolEvent {
   return {
     type: 'error',
     ts: new Date().toISOString(),

@@ -104,7 +104,7 @@ export function loadConfig(cwd?: string): MControlConfig {
  */
 export function extractToolConfig(
   config: MControlConfig,
-  keys: string[],
+  keys: string[]
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
@@ -134,18 +134,25 @@ export function saveConfig(config: MControlConfig): void {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  fs.writeFileSync(globalConfigPath(), JSON.stringify(config, null, 2), 'utf-8');
+  fs.writeFileSync(
+    globalConfigPath(),
+    JSON.stringify(config, null, 2),
+    'utf-8'
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Internal
 // ---------------------------------------------------------------------------
 
-function loadLayer(filePath: string, layer: 'global' | 'project'): MControlConfig {
+function loadLayer(
+  filePath: string,
+  layer: 'global' | 'project'
+): MControlConfig {
   if (!fs.existsSync(filePath)) {
     if (layer === 'global') {
       throw new ConfigError(
-        `Global config not found at ${filePath}. Run 'mctl init' to create it.`,
+        `Global config not found at ${filePath}. Run 'mctl init' to create it.`
       );
     }
     throw new ConfigError(`Project config not found at ${filePath}.`);
@@ -156,7 +163,7 @@ function loadLayer(filePath: string, layer: 'global' | 'project'): MControlConfi
     raw = fs.readFileSync(filePath, 'utf-8');
   } catch (err) {
     throw new ConfigError(
-      `Cannot read ${layer} config at ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+      `Cannot read ${layer} config at ${filePath}: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 
@@ -165,7 +172,7 @@ function loadLayer(filePath: string, layer: 'global' | 'project'): MControlConfi
     parsed = JSON.parse(raw);
   } catch (err) {
     throw new ConfigError(
-      `Invalid JSON in ${layer} config at ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+      `Invalid JSON in ${layer} config at ${filePath}: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 
@@ -175,10 +182,12 @@ function loadLayer(filePath: string, layer: 'global' | 'project'): MControlConfi
 function validateConfig(
   raw: unknown,
   filePath: string,
-  layer: string,
+  layer: string
 ): MControlConfig {
   if (typeof raw !== 'object' || raw === null) {
-    throw new ConfigError(`${layer} config at ${filePath}: root must be a JSON object`);
+    throw new ConfigError(
+      `${layer} config at ${filePath}: root must be a JSON object`
+    );
   }
 
   const obj = raw as Record<string, unknown>;
@@ -187,7 +196,7 @@ function validateConfig(
     throw new ConfigError(
       `${layer} config at ${filePath}: unsupported configVersion: ${String(obj['configVersion'])}. ` +
         `Expected ${CONFIG_VERSION}. ` +
-        `If you upgraded m-control, update your config file manually or delete it and run 'mctl init'.`,
+        `If you upgraded m-control, update your config file manually or delete it and run 'mctl init'.`
     );
   }
 
@@ -195,7 +204,10 @@ function validateConfig(
 }
 
 /** Deep merge: project values override global, undefined project values fall back to global. */
-function mergeConfigs(global: MControlConfig, project: MControlConfig): MControlConfig {
+function mergeConfigs(
+  global: MControlConfig,
+  project: MControlConfig
+): MControlConfig {
   return {
     configVersion: CONFIG_VERSION,
     tools: {
@@ -210,7 +222,7 @@ function mergeConfigs(global: MControlConfig, project: MControlConfig): MControl
               ? { ...globalValue, ...projectValue }
               : projectValue,
           ];
-        }),
+        })
       ),
     },
   };
