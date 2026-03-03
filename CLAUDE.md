@@ -43,6 +43,11 @@ yarn build            # runs both in correct order
 Write ADR in `docs/adr/` for any architectural decision. Use `docs/adr/TEMPLATE.md`.
 Next number: check `docs/adr/` and increment.
 
+## Manual Testing Guide
+`MANUAL-TESTING.md` at the repo root documents how to manually validate the app.
+Update it whenever you add a new CLI command, change existing command behaviour, or add a new tool.
+Each entry must include the exact command, expected stdout/stderr, and expected exit code.
+
 ## Never
 - `console.log` in production code in `packages/` or `apps/` (use EventSink)
 - Hardcode paths — use `path.resolve()` or config
