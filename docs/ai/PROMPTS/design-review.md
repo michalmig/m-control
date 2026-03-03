@@ -20,7 +20,7 @@ I'm planning to [IMPLEMENT/CHANGE] [FEATURE/COMPONENT] in m-control.
 
 Please review this design considering:
 1. **Constraints:** @docs/architecture/constraints.md - Am I violating any rules?
-2. **Architecture:** @docs/architecture/OVERVIEW.md - Does this fit the architecture?
+2. **Architecture:** @ONBOARDING.md - Does this fit the architecture?
 3. **Patterns:** @docs/ai/CODING-GUIDELINES.md - Am I following best practices?
 4. **Past decisions:** @docs/adr/ - Does this conflict with past ADRs?
 5. **Anti-patterns:** @docs/ai/ANTI-PATTERNS.md - Am I repeating past mistakes?

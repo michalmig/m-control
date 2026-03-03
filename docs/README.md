@@ -6,8 +6,7 @@ Welcome to the m-control documentation. This guide will help you navigate the do
 
 **New to the project?**
 1. Read [VISION.md](VISION.md) - Understand what m-control is and where it's going
-2. Read [architecture/OVERVIEW.md](architecture/OVERVIEW.md) - High-level technical overview
-3. Read [adr/](adr/) - Understand key decisions made
+2. Read [adr/](adr/) - Understand key decisions made
 
 **Working with AI assistants?**
 1. Start with [ai/PROJECT-CONTEXT.md](ai/PROJECT-CONTEXT.md) - Bootstrap context
@@ -33,7 +32,6 @@ docs/
 │   └── 0001-*.md                
 │
 ├── architecture/                🏗️ Technical architecture
-│   ├── OVERVIEW.md              
 │   ├── constraints.md           ⚠️ "Constitution"
 │   ├── plugin-contract.md       
 │   ├── execution-model.md       
@@ -50,10 +48,10 @@ docs/
 ## 🎯 Quick Links
 
 ### For Developers
-- [Getting Started](../CONTRIBUTING.md#getting-started)
-- [Adding New Tools](../CONTRIBUTING.md#adding-new-toolsplugins)
+- [Getting Started](../ONBOARDING.md)
+- [Adding New Tools](../ONBOARDING.md#adding-a-new-tool)
 - [Code Style](ai/CODING-GUIDELINES.md)
-- [Architecture Overview](architecture/OVERVIEW.md)
+- [Architecture Constraints](architecture/constraints.md)
 
 ### For Product Understanding
 - [Vision & Roadmap](VISION.md)
@@ -81,7 +79,8 @@ docs/
 → [ai/PROMPTS/implement-tool.md](ai/PROMPTS/implement-tool.md)
 
 ### "I want to understand the architecture"
-→ [architecture/OVERVIEW.md](architecture/OVERVIEW.md)
+→ [ONBOARDING.md](../ONBOARDING.md) — component map and data flow
+→ [architecture/constraints.md](architecture/constraints.md) — the rules
 
 ### "I made a mistake and want to prevent it in future"
 → Add to [ai/ANTI-PATTERNS.md](ai/ANTI-PATTERNS.md)

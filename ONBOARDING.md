@@ -62,7 +62,11 @@ m-control/
 │           ├── index.ts       # Router — parses argv, delegates to commands
 │           └── commands/
 │               ├── list.ts    # mctl list
-│               └── run.ts     # mctl run <id>
+│               ├── run.ts     # mctl run <id>
+│               └── work/      # mctl work start|stop
+│                   ├── index.ts
+│                   ├── executor.ts
+│                   └── types.ts
 │
 ├── packages/
 │   └── core/                  # Runtime engine (@m-control/core)
@@ -256,11 +260,15 @@ No registration step. Discovery is automatic.
 ## CLI Reference
 
 ```bash
-mctl list                     # List all discovered tools
-mctl run <tool-id>            # Run tool, pretty-print events
-mctl run <tool-id> --json     # Run tool, passthrough raw NDJSON
+mctl list                              # List all discovered tools
+mctl run <tool-id>                     # Run tool, pretty-print events
+mctl run <tool-id> --json             # Run tool, passthrough raw NDJSON
+mctl work start [--project <name>]    # Run "start" steps for a work project
+mctl work stop  [--project <name>]    # Run "stop" steps for a work project
 mctl --help
 ```
+
+Work project steps are defined in `~/.m-control/config.json` under a `"work"` key (see ADR-0004). Each step is either `{ "tool": "<id>", "input": {} }` or `{ "shell": "<cmd>" }`. Steps run sequentially; execution stops on first failure.
 
 ---
 
@@ -324,9 +332,10 @@ MControlError
 
 ```
 docs/
-├── VISION.md                  Where this is going (CLI → SaaS)
-├── architecture/OVERVIEW.md   Component map
-├── architecture/plugin-contract.md
-├── ai/CODING-GUIDELINES.md    Patterns to follow
-└── ai/ANTI-PATTERNS.md        What not to do (with rationale)
+├── VISION.md                      Where this is going (CLI → SaaS)
+├── architecture/constraints.md    Hard rules — read before making arch decisions
+├── architecture/execution-model.md  Tool Protocol v1 spec
+├── adr/                           Past architectural decisions
+├── ai/CODING-GUIDELINES.md        Patterns to follow
+└── ai/ANTI-PATTERNS.md            What not to do (with rationale)
 ```

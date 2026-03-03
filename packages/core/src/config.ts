@@ -208,6 +208,9 @@ function mergeConfigs(
   global: MControlConfig,
   project: MControlConfig
 ): MControlConfig {
+  // Project-level work config fully overrides global; no deep merge of steps.
+  const work = project.work ?? global.work;
+
   return {
     configVersion: CONFIG_VERSION,
     tools: {
@@ -225,5 +228,6 @@ function mergeConfigs(
         })
       ),
     },
+    ...(work !== undefined ? { work } : {}),
   };
 }

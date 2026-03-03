@@ -25,7 +25,6 @@ m-control/
 │   │   └── 0001-typescript-orchestrator.md
 │   │
 │   ├── architecture/            # How the system works (technical)
-│   │   ├── OVERVIEW.md          # Big picture, component map
 │   │   ├── constraints.md       # ⚠️  Hard rules — never violate
 │   │   ├── plugin-contract.md   # Plugin interface & lifecycle
 │   │   ├── execution-model.md   # How commands are resolved & run

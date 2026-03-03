@@ -20,7 +20,6 @@ m-control/
 │   │   └── 0001-*.md            # Individual decisions (numbered)
 │   │
 │   ├── architecture/            # Technical architecture docs
-│   │   ├── OVERVIEW.md          # High-level architecture (1-2 pages)
 │   │   ├── constraints.md       # "Constitution" - what NOT to do
 │   │   ├── plugin-contract.md   # How plugins work
 │   │   ├── execution-model.md   # How tools execute
@@ -183,20 +182,6 @@ Records of significant architectural decisions.
 ### `docs/architecture/` - Technical Architecture
 
 Describes HOW the system works technically.
-
----
-
-#### `docs/architecture/OVERVIEW.md`
-**Purpose:** High-level architecture summary  
-**Max length:** 1-2 pages  
-**Contains:**
-- System components
-- Data flow
-- Key technologies
-- Integration points
-
-**Think of it as:** 30,000 foot view  
-**Update when:** Major architectural changes.
 
 ---
 
@@ -489,7 +474,7 @@ cp -r templates/tool-boilerplate src/plugins/category/new-tool
 3. `docs/ai/ANTI-PATTERNS.md` - What to avoid?
 
 **Architecture question?**
-1. `docs/architecture/OVERVIEW.md` - High-level view
+1. `ONBOARDING.md` - Component map and data flow
 2. `docs/architecture/<specific>.md` - Deep dive
 3. `docs/adr/` - Historical context
 

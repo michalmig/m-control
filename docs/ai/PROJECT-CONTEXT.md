@@ -18,7 +18,7 @@ A personal CLI orchestrator for developer productivity — discovers and runs st
 
 - ✅ Yarn workspaces monorepo (`apps/mctl`, `packages/core`)
 - ✅ `@m-control/core` — runtime engine: tool discovery, protocol types, runner interface
-- ✅ `@m-control/mctl` — CLI: `mctl list`, `mctl run <id>`, `mctl --help`
+- ✅ `@m-control/mctl` — CLI: `mctl list`, `mctl run <id>`, `mctl work start/stop`, `mctl --help`
 - ✅ Tool Protocol v1 — NDJSON stdout / JSON stdin / exit codes (ADR-0003)
 - ✅ `hello-world` tool in `tools/misc/hello-world/`
 - ✅ ncc bundle at `apps/mctl/dist/bundle/index.js` (single self-contained file)

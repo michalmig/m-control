@@ -5,6 +5,7 @@
 
 import { runList } from './commands/list';
 import { runRun } from './commands/run';
+import { runWork } from './commands/work/index';
 
 // ---------------------------------------------------------------------------
 // Help
@@ -16,11 +17,14 @@ function showHelp(): void {
 m-control — Michał's personal command center
 
 Usage:
-  mctl list                   List available tools
-  mctl run <tool-id>          Run a tool
-  mctl run <tool-id> --json   Passthrough raw NDJSON output
+  mctl list                              List available tools
+  mctl run <tool-id>                     Run a tool
+  mctl run <tool-id> --json              Passthrough raw NDJSON output
 
-  mctl --help                 Show this help
+  mctl work start [--project <name>]     Start a work session
+  mctl work stop  [--project <name>]     Stop a work session
+
+  mctl --help                            Show this help
 
 Configuration:
   ~/.m-control/config.json
@@ -49,6 +53,10 @@ async function main(): Promise<void> {
 
     case 'run':
       await runRun(rest);
+      break;
+
+    case 'work':
+      await runWork(rest);
       break;
 
     default:

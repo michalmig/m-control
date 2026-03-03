@@ -227,7 +227,30 @@ export const EXIT_CODES = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Config
+// Work config
+// ---------------------------------------------------------------------------
+
+/**
+ * A single step in a work session.
+ * Exactly one of `tool` or `shell` must be present.
+ */
+export type WorkStep =
+  | { tool: string; input?: Record<string, unknown> }
+  | { shell: string };
+
+/** Per-project work configuration: steps to run on start and stop. */
+export interface WorkProjectConfig {
+  start?: WorkStep[];
+  stop?: WorkStep[];
+}
+
+/** Top-level work section in ~/.m-control/config.json. */
+export interface WorkConfig {
+  projects: Record<string, WorkProjectConfig>;
+}
+
+// ---------------------------------------------------------------------------
+// Global config
 // ---------------------------------------------------------------------------
 
 /**
@@ -249,6 +272,8 @@ export interface MControlConfig {
       vaultPath: string;
     };
   };
+  /** Optional work session configuration. */
+  work?: WorkConfig;
 }
 
 export const CONFIG_VERSION = 1 as const;
